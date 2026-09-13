@@ -4,6 +4,8 @@ import type { AgeLimit, EventCategory } from "../models/Event";
 
 import { EventModel } from "../models/Event";
 
+import { ticketmasterService } from "./TicketmasterService";
+
  
 
 type EventFilterOptions = {
@@ -20,29 +22,57 @@ type EventFilterOptions = {
 
 export class EventService {
 
-  getAllEvents(): EventModel[] {
+  private cachedEvents: EventModel[] | null = null;
 
-    return localEvents;
+ 
+
+  async getAllEvents(): Promise<EventModel[]> {
+
+    if (this.cachedEvents) {
+
+      return this.cachedEvents;
+
+    }
+
+ 
+
+    const apiEvents = await ticketmasterService.getEvents();
+
+ 
+
+    this.cachedEvents = [...localEvents, ...apiEvents];
+
+ 
+
+    return this.cachedEvents;
 
   }
 
  
 
-  getEventById(id: string): EventModel | undefined {
+  async getEventById(id: string): Promise<EventModel | undefined> {
 
-    return localEvents.find((event) => event.id === id);
+    const events = await this.getAllEvents();
+
+ 
+
+    return events.find((event) => event.id === id);
 
   }
 
  
 
-  filterEvents(options: EventFilterOptions): EventModel[] {
+  async filterEvents(options: EventFilterOptions): Promise<EventModel[]> {
 
     const { search = "", category = null, ageLimit = null } = options;
 
  
 
-    return localEvents.filter((event) => {
+    const events = await this.getAllEvents();
+
+ 
+
+    return events.filter((event) => {
 
       const matchesSearch = event.matchesSearch(search);
 
@@ -55,6 +85,14 @@ export class EventService {
       return matchesSearch && matchesCategory && matchesAge;
 
     });
+
+  }
+
+ 
+
+  clearCache(): void {
+
+    this.cachedEvents = null;
 
   }
 
