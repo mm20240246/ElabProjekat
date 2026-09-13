@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -7,6 +7,8 @@ import Button from "../components/Button";
 import FormInput from "../components/FormInput";
 
 import { useAuth } from "../context/AuthContext";
+
+import type { EventModel } from "../models/Event";
 
 import { Reservation } from "../models/Reservation";
 
@@ -26,7 +28,11 @@ function EventDetailsPage() {
 
  
 
-  const event = id ? eventService.getEventById(id) : undefined;
+  const [event, setEvent] = useState<EventModel | null>(null);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [loadError, setLoadError] = useState("");
 
  
 
@@ -34,7 +40,7 @@ function EventDetailsPage() {
 
   const [numberOfPeople, setNumberOfPeople] = useState(1);
 
-  const [reservationDate, setReservationDate] = useState(event?.date ?? "");
+  const [reservationDate, setReservationDate] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -42,43 +48,117 @@ function EventDetailsPage() {
 
  
 
-  if (!event) {
+  useEffect(() => {
 
-    return (
-
-      <main className="page-container">
-
-        <section className="not-found-card">
-
-          <h1>Događaj nije pronađen</h1>
-
-          <p>Izabrani događaj ne postoji.</p>
+    let isMounted = true;
 
  
 
-          <Button type="button" onClick={() => navigate("/events")}>
+    async function loadEvent() {
 
-            Nazad na sve žurke
+      if (!id) {
 
-          </Button>
+        setLoadError("Događaj nije pronađen.");
 
-        </section>
+        setIsLoading(false);
 
-      </main>
+        return;
 
-    );
-
-  }
+      }
 
  
 
-  function handleReservationSubmit(eventSubmit: React.FormEvent<HTMLFormElement>) {
+      try {
+
+        setIsLoading(true);
+
+        setLoadError("");
+
+ 
+
+        const foundEvent = await eventService.getEventById(id);
+
+ 
+
+        if (!isMounted) {
+
+          return;
+
+        }
+
+ 
+
+        if (!foundEvent) {
+
+          setLoadError("Događaj nije pronađen.");
+
+          setEvent(null);
+
+          return;
+
+        }
+
+ 
+
+        setEvent(foundEvent);
+
+        setReservationDate(foundEvent.date);
+
+      } catch {
+
+        if (isMounted) {
+
+          setLoadError("Došlo je do greške prilikom učitavanja događaja.");
+
+        }
+
+      } finally {
+
+        if (isMounted) {
+
+          setIsLoading(false);
+
+        }
+
+      }
+
+    }
+
+ 
+
+    loadEvent();
+
+ 
+
+    return () => {
+
+      isMounted = false;
+
+    };
+
+  }, [id]);
+
+ 
+
+  function handleReservationSubmit(
+
+    eventSubmit: React.FormEvent<HTMLFormElement>
+
+  ) {
 
     eventSubmit.preventDefault();
 
+ 
+
+    setErrorMessage("");
+
+    setSuccessMessage("");
+
+ 
+
     if (!event) {
 
-      setErrorMessage("Događaj nije pronađen.");
+      setErrorMessage("Događaj nije učitan.");
 
       return;
 
@@ -173,6 +253,58 @@ function EventDetailsPage() {
       navigate("/reservations");
 
     }, 800);
+
+  }
+
+ 
+
+  if (isLoading) {
+
+    return (
+
+      <main className="page-container">
+
+        <section className="not-found-card">
+
+          <h1>Učitavanje...</h1>
+
+          <p>Molimo sačekajte dok se događaj učitava.</p>
+
+        </section>
+
+      </main>
+
+    );
+
+  }
+
+ 
+
+  if (loadError || !event) {
+
+    return (
+
+      <main className="page-container">
+
+        <section className="not-found-card">
+
+          <h1>Događaj nije pronađen</h1>
+
+          <p>{loadError || "Izabrani događaj ne postoji."}</p>
+
+ 
+
+          <Button type="button" onClick={() => navigate("/events")}>
+
+            Nazad na sve žurke
+
+          </Button>
+
+        </section>
+
+      </main>
+
+    );
 
   }
 
