@@ -432,11 +432,35 @@ function EventDetailsPage() {
 
         <div className="event-details-content">
 
-          <p className="event-details-category">{event.getCategoryLabel()}</p>
+          <div className="event-details-top-meta">
+
+  <p className="event-details-category">{event.getCategoryLabel()}</p>
 
  
 
-          <h1>{event.title}</h1>
+  <span
+
+    className={
+
+      event.source === "api"
+
+        ? "event-details-source event-details-source--api"
+
+        : "event-details-source event-details-source--local"
+
+    }
+
+  >
+
+    Izvor: {event.getSourceLabel()}
+
+  </span>
+
+</div>
+
+ 
+
+<h1>{event.title}</h1>
 
  
 
