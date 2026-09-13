@@ -44,6 +44,26 @@ function EventCard({ event }: EventCardProps) {
 
         <span className="event-card-category">{event.getCategoryLabel()}</span>
 
+ 
+
+        <span
+
+          className={
+
+            event.source === "api"
+
+              ? "event-card-source event-card-source--api"
+
+              : "event-card-source event-card-source--local"
+
+          }
+
+        >
+
+          {event.getSourceLabel()}
+
+        </span>
+
       </div>
 
  
