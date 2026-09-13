@@ -26,6 +26,12 @@ type TicketmasterVenue = {
 
   };
 
+  country?: {
+
+    name?: string;
+
+  };
+
 };
 
  
@@ -86,23 +92,35 @@ type TicketmasterResponse = {
 
   };
 
+  page?: {
+
+    totalElements?: number;
+
+  };
+
 };
 
- 
+type TicketmasterQueryAttempt ={
+    label: string;
+    params: Record<string, string>;
+};
 
 export class TicketmasterService {
 
-  private apiKey = import.meta.env.VITE_TICKETMASTER_API_KEY;
-
-  private baseUrl = "https://app.ticketmaster.com/discovery/v2/events.json";
-
+  private apiKey = import.meta.env.VITE_TICKETMASTER_API_KEY;  private baseUrl = "https://app.ticketmaster.com/discovery/v2/events.json";
  
 
   async getEvents(): Promise<EventModel[]> {
 
     if (!this.apiKey) {
 
-      console.warn("Ticketmaster API key nije podešen. Koriste se lokalni događaji.");
+      console.warn(
+
+        "Ticketmaster API key nije podešen. Koriste se samo lokalni događaji."
+
+      );
+
+ 
 
       return [];
 
@@ -110,17 +128,155 @@ export class TicketmasterService {
 
  
 
+    const queryAttempts: TicketmasterQueryAttempt[] = [
+
+      {
+
+        label: "Belgrade",
+
+        params: {
+
+          city: "Belgrade",
+
+          size: "20",
+
+          sort: "date,asc",
+
+        },
+
+      },
+
+      {
+
+        label: "Serbia",
+
+        params: {
+
+          countryCode: "RS",
+
+          size: "20",
+
+          sort: "date,asc",
+
+        },
+
+      },
+
+      {
+
+        label: "Music keyword",
+
+        params: {
+
+          keyword: "music",
+
+          size: "20",
+
+          sort: "date,asc",
+
+        },
+
+      },
+
+      {
+
+        label: "London music",
+
+        params: {
+
+          city: "London",
+
+          keyword: "music",
+
+          size: "20",
+
+          sort: "date,asc",
+
+        },
+
+      },
+
+      {
+
+        label: "New York music",
+
+        params: {
+
+          city: "New York",
+
+          keyword: "music",
+
+          size: "20",
+
+          sort: "date,asc",
+
+        },
+
+      },
+
+    ];
+
+ 
+
+    for (const attempt of queryAttempts) {
+
+      const events = await this.fetchEvents(attempt.params, attempt.label);
+
+ 
+
+      if (events.length > 0) {
+
+        console.log(
+
+          `Ticketmaster API: učitano ${events.length} događaja za upit "${attempt.label}".`
+
+        );
+
+ 
+
+        return events;
+
+      }
+
+    }
+
+ 
+
+    console.warn(
+
+      "Ticketmaster API nije vratio događaje ni za jedan upit. Koriste se samo lokalni događaji."
+
+    );
+
+ 
+
+    return [];
+
+  }
+
+ 
+
+  private async fetchEvents(
+
+    params: Record<string, string>,
+
+    label: string
+
+  ): Promise<EventModel[]> {
+
     const url = new URL(this.baseUrl);
 
  
 
     url.searchParams.set("apikey", this.apiKey);
 
-    url.searchParams.set("city", "Belgrade");
+ 
 
-    url.searchParams.set("size", "20");
+    Object.entries(params).forEach(([key, value]) => {
 
-    url.searchParams.set("sort", "date,asc");
+      url.searchParams.set(key, value);
+
+    });
 
  
 
@@ -132,7 +288,17 @@ export class TicketmasterService {
 
       if (!response.ok) {
 
-        console.warn("Ticketmaster API nije uspešno vratio podatke.");
+        console.warn(
+
+          `Ticketmaster API greška za upit "${label}":`,
+
+          response.status,
+
+          response.statusText
+
+        );
+
+ 
 
         return [];
 
@@ -148,11 +314,31 @@ export class TicketmasterService {
 
  
 
-      return apiEvents.map((event, index) => this.mapToEventModel(event, index));
+      console.log(
+
+        `Ticketmaster API upit "${label}" vratio je ${apiEvents.length} događaja.`
+
+      );
+
+ 
+
+      return apiEvents.map((ticketmasterEvent, index) =>
+
+        this.mapToEventModel(ticketmasterEvent, index)
+
+      );
 
     } catch (error) {
 
-      console.warn("Greška prilikom poziva Ticketmaster API-ja:", error);
+      console.warn(
+
+        `Greška prilikom Ticketmaster API poziva za upit "${label}":`,
+
+        error
+
+      );
+
+ 
 
       return [];
 
@@ -162,23 +348,25 @@ export class TicketmasterService {
 
  
 
-  private mapToEventModel(event: TicketmasterEvent, index: number): EventModel {
+  private mapToEventModel(
 
-    const venue = event._embedded?.venues?.[0];
+    ticketmasterEvent: TicketmasterEvent,
+
+    index: number
+
+  ): EventModel {
+
+    const venue = ticketmasterEvent._embedded?.venues?.[0];
 
  
 
-    const date = event.dates?.start?.localDate ?? new Date().toISOString();
+    const date =
+
+      ticketmasterEvent.dates?.start?.localDate ?? new Date().toISOString();
 
  
 
-    const location = [
-
-      venue?.name,
-
-      venue?.city?.name,
-
-    ]
+    const location = [venue?.name, venue?.city?.name, venue?.country?.name]
 
       .filter(Boolean)
 
@@ -186,11 +374,11 @@ export class TicketmasterService {
 
  
 
-    const image = this.getBestImage(event.images);
+    const image = this.getBestImage(ticketmasterEvent.images);
 
  
 
-    const category = this.mapCategory(event);
+    const category = this.mapCategory(ticketmasterEvent);
 
     const ageLimit = this.mapAgeLimit(index);
 
@@ -198,19 +386,19 @@ export class TicketmasterService {
 
     const description =
 
-      event.info ||
+      ticketmasterEvent.info ||
 
-      event.pleaseNote ||
+      ticketmasterEvent.pleaseNote ||
 
-      "Događaj preuzet sa javnog Ticketmaster API-ja. Dodatne informacije dostupne su na stranici događaja.";
+      "Događaj preuzet sa javnog Ticketmaster API-ja. Podaci su uniformno formatirani i prikazani u aplikaciji.";
 
  
 
     return new EventModel(
 
-      `api-${event.id}`,
+      `api-${ticketmasterEvent.id}`,
 
-      event.name,
+      ticketmasterEvent.name,
 
       category,
 
@@ -218,7 +406,7 @@ export class TicketmasterService {
 
       date,
 
-      location || "Beograd",
+      location || "Lokacija nije dostupna",
 
       image,
 
@@ -234,11 +422,19 @@ export class TicketmasterService {
 
   private getBestImage(images?: TicketmasterImage[]): string {
 
+    const fallbackImage =
+
+      "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=900&q=80";
+
+ 
+
     if (!images || images.length === 0) {
 
-      return "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=900&q=80";
+      return fallbackImage;
 
     }
+
+ 
 
     const sortedImages = [...images].sort((a, b) => {
 
@@ -246,27 +442,49 @@ export class TicketmasterService {
 
       const secondSize = (b.width ?? 0) * (b.height ?? 0);
 
+ 
+
       return secondSize - firstSize;
 
     });
 
-    return sortedImages[0]?.url ?? "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=900&q=80";
+ 
+
+    return sortedImages[0]?.url ?? fallbackImage;
 
   }
 
  
 
-  private mapCategory(event: TicketmasterEvent): EventCategory {
+  private mapCategory(ticketmasterEvent: TicketmasterEvent): EventCategory {
 
-    const genre = event.classifications?.[0]?.genre?.name?.toLowerCase() ?? "";
+    const genre =
 
-    const segment = event.classifications?.[0]?.segment?.name?.toLowerCase() ?? "";
+      ticketmasterEvent.classifications?.[0]?.genre?.name?.toLowerCase() ?? "";
+
+ 
+
+    const segment =
+
+      ticketmasterEvent.classifications?.[0]?.segment?.name?.toLowerCase() ??
+
+      "";
+
+ 
 
     const combined = `${genre} ${segment}`;
 
  
 
-    if (combined.includes("club") || combined.includes("dance")) {
+    if (
+
+      combined.includes("club") ||
+
+      combined.includes("dance") ||
+
+      combined.includes("electronic")
+
+    ) {
 
       return "nocni-klub";
 
@@ -274,7 +492,15 @@ export class TicketmasterService {
 
  
 
-    if (combined.includes("food") || combined.includes("folk")) {
+    if (
+
+      combined.includes("food") ||
+
+      combined.includes("folk") ||
+
+      combined.includes("traditional")
+
+    ) {
 
       return "kafana";
 
@@ -282,7 +508,15 @@ export class TicketmasterService {
 
  
 
-    if (combined.includes("festival") || combined.includes("music")) {
+    if (
+
+      combined.includes("festival") ||
+
+      combined.includes("music") ||
+
+      combined.includes("concert")
+
+    ) {
 
       return "splav";
 
@@ -302,7 +536,7 @@ export class TicketmasterService {
 
  
 
-    return ageLimits[index % ageLimits.length];
+    return ageLimits[index % ageLimits.length] ?? 18;
 
   }
 

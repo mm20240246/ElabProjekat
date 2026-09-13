@@ -4,7 +4,7 @@ import type { AgeLimit, EventCategory } from "../models/Event";
 
 import { EventModel } from "../models/Event";
 
-import { ticketmasterService } from "./TicketmasterService";
+import { ticketmasterService } from "./TicketMasterService";
 
  
 
