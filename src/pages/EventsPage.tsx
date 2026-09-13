@@ -8,9 +8,11 @@ import FilterBar from "../components/FilterBar";
 
 import Pagination from "../components/Pagination";
 
-import { eventService } from "../services/EventService";
-
 import type { AgeLimit, EventCategory } from "../models/Event";
+
+import type { EventModel } from "../models/Event";
+
+import { eventService } from "../services/EventService";
 
  
 
@@ -76,7 +78,13 @@ function EventsPage() {
 
   const [search, setSearch] = useState(searchFromUrl);
 
+  const [events, setEvents] = useState<EventModel[]>([]);
+
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [errorMessage, setErrorMessage] = useState("");
 
  
 
@@ -90,23 +98,77 @@ function EventsPage() {
 
  
 
-  const filteredEvents = useMemo(() => {
+  useEffect(() => {
 
-    return eventService.filterEvents({
+    let isMounted = true;
 
-      search,
+ 
 
-      category: selectedCategory,
+    async function loadEvents() {
 
-      ageLimit: selectedAge,
+      try {
 
-    });
+        setIsLoading(true);
+
+        setErrorMessage("");
+
+ 
+
+        const filteredEvents = await eventService.filterEvents({
+
+          search,
+
+          category: selectedCategory,
+
+          ageLimit: selectedAge,
+
+        });
+
+ 
+
+        if (isMounted) {
+
+          setEvents(filteredEvents);
+
+        }
+
+      } catch {
+
+        if (isMounted) {
+
+          setErrorMessage("Došlo je do greške prilikom učitavanja događaja.");
+
+        }
+
+      } finally {
+
+        if (isMounted) {
+
+          setIsLoading(false);
+
+        }
+
+      }
+
+    }
+
+ 
+
+    loadEvents();
+
+ 
+
+    return () => {
+
+      isMounted = false;
+
+    };
 
   }, [search, selectedCategory, selectedAge]);
 
  
 
-  const totalPages = Math.ceil(filteredEvents.length / EVENTS_PER_PAGE);
+  const totalPages = Math.ceil(events.length / EVENTS_PER_PAGE);
 
  
 
@@ -118,9 +180,9 @@ function EventsPage() {
 
  
 
-    return filteredEvents.slice(startIndex, endIndex);
+    return events.slice(startIndex, endIndex);
 
-  }, [filteredEvents, currentPage]);
+  }, [events, currentPage]);
 
  
 
@@ -294,7 +356,35 @@ function EventsPage() {
 
  
 
-      {paginatedEvents.length > 0 ? (
+      {isLoading && (
+
+        <section className="no-events-card">
+
+          <h2>Učitavanje događaja...</h2>
+
+          <p>Molimo sačekajte dok se podaci učitavaju.</p>
+
+        </section>
+
+      )}
+
+ 
+
+      {!isLoading && errorMessage && (
+
+        <section className="no-events-card">
+
+          <h2>Greška</h2>
+
+          <p>{errorMessage}</p>
+
+        </section>
+
+      )}
+
+ 
+
+      {!isLoading && !errorMessage && paginatedEvents.length > 0 && (
 
         <section className="events-grid">
 
@@ -306,7 +396,11 @@ function EventsPage() {
 
         </section>
 
-      ) : (
+      )}
+
+ 
+
+      {!isLoading && !errorMessage && paginatedEvents.length === 0 && (
 
         <section className="no-events-card">
 
@@ -320,15 +414,19 @@ function EventsPage() {
 
  
 
-      <Pagination
+      {!isLoading && !errorMessage && (
 
-        currentPage={currentPage}
+        <Pagination
 
-        totalPages={totalPages}
+          currentPage={currentPage}
 
-        onPageChange={setCurrentPage}
+          totalPages={totalPages}
 
-      />
+          onPageChange={setCurrentPage}
+
+        />
+
+      )}
 
     </main>
 
