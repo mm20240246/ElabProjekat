@@ -1,8 +1,18 @@
+import { useState } from "react";
+
 import { useNavigate, useParams } from "react-router-dom";
 
 import Button from "../components/Button";
 
+import FormInput from "../components/FormInput";
+
+import { useAuth } from "../context/AuthContext";
+
+import { Reservation } from "../models/Reservation";
+
 import { eventService } from "../services/EventService";
+
+import { reservationService } from "../services/ReservationService";
 
  
 
@@ -12,9 +22,23 @@ function EventDetailsPage() {
 
   const navigate = useNavigate();
 
+  const { currentUser } = useAuth();
+
  
 
   const event = id ? eventService.getEventById(id) : undefined;
+
+ 
+
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const [numberOfPeople, setNumberOfPeople] = useState(1);
+
+  const [reservationDate, setReservationDate] = useState(event?.date ?? "");
+
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [successMessage, setSuccessMessage] = useState("");
 
  
 
@@ -43,6 +67,112 @@ function EventDetailsPage() {
       </main>
 
     );
+
+  }
+
+ 
+
+  function handleReservationSubmit(eventSubmit: React.FormEvent<HTMLFormElement>) {
+
+    eventSubmit.preventDefault();
+
+    if (!event) {
+
+      setErrorMessage("Događaj nije pronađen.");
+
+      return;
+
+    }
+
+ 
+
+    if (!currentUser) {
+
+      setErrorMessage("Morate biti prijavljeni da biste napravili rezervaciju.");
+
+      return;
+
+    }
+
+ 
+
+    if (phoneNumber.trim().length < 6) {
+
+      setErrorMessage("Unesite ispravan broj telefona.");
+
+      return;
+
+    }
+
+ 
+
+    if (numberOfPeople < 1) {
+
+      setErrorMessage("Broj osoba mora biti najmanje 1.");
+
+      return;
+
+    }
+
+ 
+
+    if (!reservationDate) {
+
+      setErrorMessage("Izaberite datum rezervacije.");
+
+      return;
+
+    }
+
+ 
+
+    const newReservation = new Reservation(
+
+      Date.now().toString(),
+
+      currentUser.email,
+
+      event.id,
+
+      event.title,
+
+      event.image,
+
+      event.location,
+
+      reservationDate,
+
+      phoneNumber.trim(),
+
+      numberOfPeople,
+
+      new Date().toISOString()
+
+    );
+
+ 
+
+    reservationService.addReservation(newReservation);
+
+ 
+
+    setSuccessMessage("Rezervacija je uspešno napravljena.");
+
+ 
+
+    setPhoneNumber("");
+
+    setNumberOfPeople(1);
+
+    setReservationDate(event.date);
+
+ 
+
+    setTimeout(() => {
+
+      navigate("/reservations");
+
+    }, 800);
 
   }
 
@@ -84,7 +214,7 @@ function EventDetailsPage() {
 
             <div>
 
-              <span>Datum</span>
+              <span>Datum događaja</span>
 
               <strong>{event.getFormattedDate()}</strong>
 
@@ -114,27 +244,115 @@ function EventDetailsPage() {
 
  
 
-          <div className="reservation-preview-box">
+          <form className="reservation-form" onSubmit={handleReservationSubmit}>
 
             <h2>Rezervacija</h2>
 
-            <p>
+ 
 
-              U sledećem koraku ovde dodajemo funkcionalnu formu za broj
+            <FormInput
 
-              telefona i broj osoba.
+              id="reservation-phone"
 
-            </p>
+              type="tel"
+
+              label="Broj telefona"
+
+              placeholder="Unesite broj telefona"
+
+              value={phoneNumber}
+
+              onChange={(eventInput) => setPhoneNumber(eventInput.target.value)}
+
+              required
+
+            />
 
  
 
-            <Button type="button" onClick={() => navigate("/events")}>
+            <FormInput
+
+              id="reservation-people"
+
+              type="number"
+
+              label="Broj osoba"
+
+              min={1}
+
+              max={20}
+
+              value={numberOfPeople}
+
+              onChange={(eventInput) =>
+
+                setNumberOfPeople(Number(eventInput.target.value))
+
+              }
+
+              required
+
+            />
+
+ 
+
+            <FormInput
+
+              id="reservation-date"
+
+              type="date"
+
+              label="Datum rezervacije"
+
+              value={reservationDate}
+
+              onChange={(eventInput) =>
+
+                setReservationDate(eventInput.target.value)
+
+              }
+
+              required
+
+            />
+
+ 
+
+            {errorMessage && <p className="reservation-error">{errorMessage}</p>}
+
+            {successMessage && (
+
+              <p className="reservation-success">{successMessage}</p>
+
+            )}
+
+ 
+
+            <Button type="submit" fullWidth>
+
+              Rezerviši
+
+            </Button>
+
+ 
+
+            <Button
+
+              type="button"
+
+              variant="secondary"
+
+              fullWidth
+
+              onClick={() => navigate("/events")}
+
+            >
 
               Nazad na sve žurke
 
             </Button>
 
-          </div>
+          </form>
 
         </div>
 
