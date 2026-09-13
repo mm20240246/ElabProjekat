@@ -269,7 +269,7 @@ src/
 
 │   ├── ReservationService.ts
 
-│   ├── TicketmasterService.ts
+│   ├── TicketmasterApiService.ts
 
 │   └── WeatherService.ts
 
@@ -435,4 +435,4 @@ Deploy aplikacije:
  
 
 
-Ovde dodati Vercel link nakon objavljivanja
+https://elab-projekat.vercel.app/
