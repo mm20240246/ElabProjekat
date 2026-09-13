@@ -12,9 +12,13 @@ import type { EventModel } from "../models/Event";
 
 import { Reservation } from "../models/Reservation";
 
+import type { WeatherData } from "../models/Weather";
+
 import { eventService } from "../services/EventService";
 
 import { reservationService } from "../services/ReservationService";
+
+import { weatherService } from "../services/WeatherService";
 
  
 
@@ -33,6 +37,14 @@ function EventDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [loadError, setLoadError] = useState("");
+
+ 
+
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+
+  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
+
+  const [weatherError, setWeatherError] = useState("");
 
  
 
@@ -137,6 +149,96 @@ function EventDetailsPage() {
     };
 
   }, [id]);
+
+ 
+
+  useEffect(() => {
+
+    let isMounted = true;
+
+ 
+
+    async function loadWeather() {
+
+      if (!event) {
+
+        return;
+
+      }
+
+ 
+
+      try {
+
+        setIsWeatherLoading(true);
+
+        setWeatherError("");
+
+ 
+
+        const weatherData = await weatherService.getWeatherForLocation(
+
+          event.location
+
+        );
+
+ 
+
+        if (!isMounted) {
+
+          return;
+
+        }
+
+ 
+
+        if (!weatherData) {
+
+          setWeatherError("Vremenski podaci trenutno nisu dostupni.");
+
+          setWeather(null);
+
+          return;
+
+        }
+
+ 
+
+        setWeather(weatherData);
+
+      } catch {
+
+        if (isMounted) {
+
+          setWeatherError("Došlo je do greške prilikom učitavanja vremena.");
+
+        }
+
+      } finally {
+
+        if (isMounted) {
+
+          setIsWeatherLoading(false);
+
+        }
+
+      }
+
+    }
+
+ 
+
+    loadWeather();
+
+ 
+
+    return () => {
+
+      isMounted = false;
+
+    };
+
+  }, [event]);
 
  
 
@@ -373,6 +475,88 @@ function EventDetailsPage() {
             </div>
 
           </div>
+
+ 
+
+          <section className="weather-card">
+
+            <h2>Vreme za lokaciju događaja</h2>
+
+ 
+
+            {isWeatherLoading && (
+
+              <p className="weather-message">Učitavanje vremenskih podataka...</p>
+
+            )}
+
+ 
+
+            {!isWeatherLoading && weatherError && (
+
+              <p className="weather-message">{weatherError}</p>
+
+            )}
+
+ 
+
+            {!isWeatherLoading && weather && (
+
+              <div className="weather-content">
+
+                <div className="weather-main">
+
+                  <span className="weather-temperature">
+
+                    {Math.round(weather.temperature)}°C
+
+                  </span>
+
+ 
+
+                  <span className="weather-description">
+
+                    {weather.description}
+
+                  </span>
+
+                </div>
+
+ 
+
+                <div className="weather-details">
+
+                  <p>
+
+                    <span>Grad:</span> {weather.city}
+
+                    {weather.country ? `, ${weather.country}` : ""}
+
+                  </p>
+
+ 
+
+                  <p>
+
+                    <span>Vlažnost:</span> {weather.humidity}%
+
+                  </p>
+
+ 
+
+                  <p>
+
+                    <span>Vetar:</span> {weather.windSpeed} km/h
+
+                  </p>
+
+                </div>
+
+              </div>
+
+            )}
+
+          </section>
 
  
 
