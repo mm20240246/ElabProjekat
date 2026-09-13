@@ -105,7 +105,7 @@ type TicketmasterQueryAttempt ={
     params: Record<string, string>;
 };
 
-export class TicketmasterService {
+export class TicketmasterApiService {
 
   private apiKey = import.meta.env.VITE_TICKETMASTER_API_KEY;  private baseUrl = "https://app.ticketmaster.com/discovery/v2/events.json";
  
@@ -546,4 +546,4 @@ export class TicketmasterService {
 
  
 
-export const ticketmasterService = new TicketmasterService();
+export const ticketmasterApiService = new TicketmasterApiService();

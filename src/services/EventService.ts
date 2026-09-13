@@ -4,7 +4,7 @@ import type { AgeLimit, EventCategory } from "../models/Event";
 
 import { EventModel } from "../models/Event";
 
-import { ticketmasterService } from "./TicketMasterService";
+import { ticketmasterApiService } from "./TicketmasterApiService";
 
  
 
@@ -36,7 +36,7 @@ export class EventService {
 
  
 
-    const apiEvents = await ticketmasterService.getEvents();
+    const apiEvents = await ticketmasterApiService.getEvents();
 
  
 
