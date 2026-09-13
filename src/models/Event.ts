@@ -6,25 +6,33 @@ export type AgeLimit = 18 | 21 | 23;
 
  
 
+export type EventSource = "local" | "api";
+
+ 
+
 export class EventModel {
 
-  public id: string;
+  id: string;
 
-  public title: string;
+  title: string;
 
-  public category: EventCategory;
+  category: EventCategory;
 
-  public ageLimit: AgeLimit;
+  ageLimit: AgeLimit;
 
-  public date: string;
+  date: string;
 
-  public location: string;
+  location: string;
 
-  public image: string;
+  image: string;
 
-  public description: string;
+  description: string;
 
-  public price: number;
+  price: number;
+
+  source: EventSource;
+
+ 
 
   constructor(
 
@@ -44,7 +52,9 @@ export class EventModel {
 
     description: string,
 
-    price: number
+    price: number,
+
+    source: EventSource = "local"
 
   ) {
 
@@ -65,6 +75,8 @@ export class EventModel {
     this.description = description;
 
     this.price = price;
+
+    this.source = source;
 
   }
 
@@ -111,6 +123,14 @@ export class EventModel {
         return "Žurka";
 
     }
+
+  }
+
+ 
+
+  getSourceLabel(): string {
+
+    return this.source === "api" ? "API" : "Lokalno";
 
   }
 
