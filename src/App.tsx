@@ -94,7 +94,21 @@ function App() {
 
         />
 
- 
+        <Route
+
+          path="/events/:id"
+
+          element={
+
+            <ProtectedRoute>
+
+              <EventDetailsPage />
+
+            </ProtectedRoute>
+
+          }
+
+        />
 
         <Route
 
