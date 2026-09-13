@@ -396,25 +396,27 @@ export class TicketmasterService {
 
     return new EventModel(
 
-      `api-${ticketmasterEvent.id}`,
+  `api-${ticketmasterEvent.id}`,
 
-      ticketmasterEvent.name,
+  ticketmasterEvent.name,
 
-      category,
+  category,
 
-      ageLimit,
+  ageLimit,
 
-      date,
+  date,
 
-      location || "Lokacija nije dostupna",
+  location || "Lokacija nije dostupna",
 
-      image,
+  image,
 
-      description,
+  description,
 
-      1500 + index * 100
+  1500 + index * 100,
 
-    );
+  "api"
+
+);
 
   }
 
